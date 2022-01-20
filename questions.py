@@ -15,6 +15,7 @@ from binsdpy.similarity import jaccard
 from fcapsy.typicality import typicality_avg
 
 from fcapsy_experiments.centrality import Centrality
+from fcapsy_experiments.mca import MCAConcept
 
 
 @cache
@@ -61,9 +62,12 @@ def filter_supremum_infimum(concepts, context):
 def get_concept_id(concept):
     return context.lattice._concepts.index(concept)
 
-def concept_links(concepts, intent=[], id=""):
+def concept_links(concepts, intent=[], id="", limit=None):
     # concepts = sorted(concepts, key=lambda c: bl[get_concept_id(c)], reverse=True)
     concepts = [c for c in sorted(concepts, key=lambda c: len(c.extent), reverse=True) if c != context.lattice.supremum]
+
+    if limit:
+        concepts = concepts[:limit]
 
     layout = html.Ul(
         [
@@ -97,7 +101,7 @@ def concept_links(concepts, intent=[], id=""):
 
     return layout
 
-concept_links_all = concept_links(context.lattice, id="keywords")
+concept_links_all = concept_links(context.lattice, id="keywords", limit=300)
 
 navbar = dbc.NavbarSimple(
     brand="Kaggle Questions Dataset",
@@ -130,7 +134,7 @@ keywords = dbc.Col(
         ],
         className="h-100 d-flex flex-column",
     ),
-    width=3,
+    width=2,
     id="keywords-col",
     className="border-right"
 )
