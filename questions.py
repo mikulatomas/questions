@@ -1,5 +1,4 @@
 import pathlib
-from pydoc import classname
 import dash
 from dash import dcc
 import dash_bootstrap_components as dbc
@@ -9,13 +8,13 @@ import pandas as pd
 from functools import cache
 
 from concepts import Context
-from fcapsy.basic_level import basic_level_avg
 from fcapsy.cohesion import cohesion_avg
 from binsdpy.similarity import jaccard
 from fcapsy.typicality import typicality_avg
 
 from fcapsy_experiments.centrality import Centrality
 from fcapsy_experiments.mca import MCAConcept
+from fcapsy_experiments.typicality import ConceptTypicality
 
 
 @cache
@@ -44,27 +43,43 @@ df = pd.read_csv(
 )
 attributes = df.sum().sort_values(ascending=False)
 
-df_original = pd.read_csv(pathlib.Path.cwd() / "data" / "kaggle" / "kaggle.csv")
+df_original = pd.read_csv(
+    pathlib.Path.cwd() / "data" / "kaggle" / "kaggle.csv", index_col=0
+)
 
 context = Context.fromjson(pathlib.Path.cwd() / "data" / "kaggle" / "lattice.json")
 
-bl = tuple(map(float, (pathlib.Path.cwd() / "data" / "kaggle" / "basic_level.txt").read_text().split(",")))
+bl = tuple(
+    map(
+        float,
+        (pathlib.Path.cwd() / "data" / "kaggle" / "basic_level.txt")
+        .read_text()
+        .split(","),
+    )
+)
 
 
-def filter_supremum_infimum(concepts, context):
+def filter_concept_list(concepts, context, min_, max_):
     return (
         concept
         for concept in concepts
         if concept not in [context.lattice.supremum, context.lattice.infimum]
+        and len(concept.extent) >= min_
+        and len(concept.extent) <= max_
     )
 
 
 def get_concept_id(concept):
     return context.lattice._concepts.index(concept)
 
+
 def concept_links(concepts, intent=[], id="", limit=None):
     # concepts = sorted(concepts, key=lambda c: bl[get_concept_id(c)], reverse=True)
-    concepts = [c for c in sorted(concepts, key=lambda c: len(c.extent), reverse=True) if c != context.lattice.supremum]
+    concepts = [
+        c
+        for c in sorted(concepts, key=lambda c: bl[get_concept_id(c)], reverse=True)
+        if c != context.lattice.supremum
+    ]
 
     if limit:
         concepts = concepts[:limit]
@@ -101,7 +116,6 @@ def concept_links(concepts, intent=[], id="", limit=None):
 
     return layout
 
-concept_links_all = concept_links(context.lattice, id="keywords", limit=300)
 
 navbar = dbc.NavbarSimple(
     brand="Kaggle Questions Dataset",
@@ -111,12 +125,15 @@ navbar = dbc.NavbarSimple(
     fluid=True,
 )
 
-keywords = dbc.Col(
+min_extent_size = len(min(context.lattice, key=lambda c: len(c.extent)).extent)
+max_extent_size = len(max(context.lattice, key=lambda c: len(c.extent)).extent)
+
+concepts = dbc.Col(
     html.Div(
         [
             dbc.Row(
                 [
-                    html.H2(children="Keywords"),
+                    html.H2("Concepts"),
                     dcc.Dropdown(
                         id="intent-dropdown",
                         options=[
@@ -124,6 +141,15 @@ keywords = dbc.Col(
                             for label, count in attributes.iteritems()
                         ],
                         multi=True,
+                    ),
+                    dcc.RangeSlider(
+                        id="concept-size-slider",
+                        min=min_extent_size,
+                        max=max_extent_size,
+                        step=1,
+                        value=[min_extent_size, max_extent_size],
+                        allowCross=False,
+                        tooltip={"placement": "bottom", "always_visible": False},
                     ),
                 ],
                 className="pt-3 pb-2",
@@ -136,15 +162,8 @@ keywords = dbc.Col(
     ),
     width=2,
     id="keywords-col",
-    className="border-right"
+    className="border-right",
 )
-
-# right = dbc.Col(
-#     dbc.Row(
-#         [html.H2(children="Selected concept"), html.Div(id="concept-detail")],
-#         className="pt-3 pb-3",
-#     )
-# )
 
 detail = dbc.Col(id="detail", width=2, className="border-right")
 
@@ -160,7 +179,7 @@ app.layout = html.Div(
             [
                 dbc.Row(navbar),
                 dbc.Row(
-                    [keywords, questions, detail, navigation], className="flex-grow-1"
+                    [concepts, questions, detail, navigation], className="flex-grow-1"
                 ),
             ],
             fluid=True,
@@ -175,12 +194,10 @@ def concept_links_detail(concepts, intent=[], sign="", id="", className=""):
         sign_badge = dbc.Badge(
             "+", color="success", className="position-absolute top-0 start-0 h-100"
         )
-    elif sign == "-":
+    else:
         sign_badge = dbc.Badge(
             "-", color="danger", className="position-absolute top-0 start-0 h-100"
         )
-    else:
-        sign_badge = ""
 
     concepts = sorted(concepts, key=lambda c: bl[get_concept_id(c)], reverse=True)
 
@@ -222,11 +239,19 @@ def concept_links_detail(concepts, intent=[], sign="", id="", className=""):
     return layout
 
 
-@app.callback(Output("intent-dropdown", "options"), Input("intent-dropdown", "value"))
-def update_intent_dropdown(values):
+@app.callback(
+    Output("intent-dropdown", "options"),
+    Input("intent-dropdown", "value"),
+    Input("concept-size-slider", "value"),
+)
+def update_intent_dropdown(values, slider):
+    min_, max_ = slider
     if values:
-        concepts = filter_supremum_infimum(
-            context.lattice.downset_union([context.lattice[values]]), context
+        concepts = filter_concept_list(
+            context.lattice.downset_union([context.lattice[values]]),
+            context,
+            min_,
+            max_,
         )
 
         filtered_intents = []
@@ -248,16 +273,28 @@ def update_intent_dropdown(values):
     ]
 
 
-@app.callback(Output("concepts", "children"), Input("intent-dropdown", "value"))
-def update_output(values):
+@app.callback(
+    Output("concepts", "children"),
+    Input("intent-dropdown", "value"),
+    Input("concept-size-slider", "value"),
+)
+def update_output(values, slider):
+    min_, max_ = slider
+    print(min_, max_)
+
     if values:
-        concepts = filter_supremum_infimum(
-            context.lattice.downset_union([context.lattice[values]]), context
+        concepts = filter_concept_list(
+            context.lattice.downset_union([context.lattice[values]]),
+            context,
+            min_,
+            max_,
         )
 
-        return concept_links(concepts, id="keywords")
+        concept_links(concepts, id="keywords")
     else:
-        return concept_links_all
+        concepts = filter_concept_list(context.lattice, context, min_, max_)
+
+        return concept_links(concepts, id="keywords", limit=300)
 
 
 @app.callback(Output("detail", "children"), [Input("url", "pathname")])
@@ -271,7 +308,6 @@ def detail(pathname):
         centrality = Centrality(concept, core_indicator=True, axis=1)
 
         centrality_df = centrality._filter_sort_df(include_core_flag=True)
-        # centrality_df = centrality_df.loc[centrality_df["is core"] == 0]
 
         return html.Div(
             [
@@ -280,7 +316,6 @@ def detail(pathname):
                         html.Div(
                             [
                                 html.H2("Concept detail"),
-                                # html.H3("Metadata"),
                                 html.Ul(
                                     [
                                         html.Li(
@@ -291,7 +326,10 @@ def detail(pathname):
                                         ),
                                         html.Li([html.B("Shape: "), f"{shape}"]),
                                         html.Li(
-                                            [html.B("Basic level: "), f"{bl[concept_id]}"]
+                                            [
+                                                html.B("Basic level: "),
+                                                f"{bl[concept_id]:.2f}",
+                                            ]
                                         ),
                                     ]
                                 ),
@@ -302,26 +340,24 @@ def detail(pathname):
                     className="pt-3 pb-2",
                 ),
                 dbc.Row(
-
-                        
-                            html.Ul(
+                    html.Ul(
+                        [
+                            html.Li(
                                 [
-                                    html.Li(
-                                        [
-                                            keyword,
-                                            dbc.Badge(
-                                                f"Centrality: {centrality_df.loc[keyword]['Centrality']:.2f}",
-                                                color="white",
-                                                text_color="muted",
-                                                className="position-absolute end-0",
-                                            ),
-                                        ]
-                                    )
-                                    for keyword in centrality_df.index
-                                ], id="centrality"
-                            ),
-                    
-                        className="flex-grow-1 overflow-auto full-height-fix",
+                                    keyword,
+                                    dbc.Badge(
+                                        f"Centrality: {centrality_df.loc[keyword]['Centrality']:.2f}",
+                                        color="white",
+                                        text_color="muted",
+                                        className="position-absolute end-0",
+                                    ),
+                                ]
+                            )
+                            for keyword in centrality_df.index
+                        ],
+                        id="centrality",
+                    ),
+                    className="flex-grow-1 overflow-auto full-height-fix",
                 ),
             ],
             className="h-100 d-flex flex-column",
@@ -368,25 +404,37 @@ def questions(pathname):
         concept_id = int(pathname.lstrip("/"))
         concept = context.lattice[concept_id]
 
-        questions = df_original.iloc[list(concept.extent)]
+        typicality_functions = {
+            "typ_avg": {
+                "func": typicality_avg,
+                "args": {"J": [similarity_cached]},
+            }
+        }
 
-        typicality = [
-            typicality_avg(item, concept, similarity_cached) for item in concept.extent
-        ]
+        typicality = ConceptTypicality(
+            concept,
+            typicality_functions=typicality_functions,
+            extra_columns={
+                "link": df_original["Link"],
+                "followers": df_original["Followers"],
+                "answered": df_original["Answered"],
+            },
+        )
 
-        data = [
-            (row["Questions"], row["Link"], row["Followers"], row["Answered"], typ)
-            for typ, (_, row) in zip(typicality, questions.iterrows())
-        ]
+        data = typicality.df.rename(columns={"typ_avg(J)": "typ"})
 
-        data = sorted(data, key=lambda x: x[4], reverse=True)
+        data = data.sort_values("typ", ascending=False)
+
+        mca = MCAConcept(
+            concept, n_components=3, n_iter=5, color_by=["typ", data["typ"]]
+        )
+        fig = mca.to_plotly()
+        fig.update_traces(marker={"size": 7})
 
         return html.Div(
             [
                 dbc.Row(
-                    [
-                        html.H2("Questions"),
-                    ],
+                    [html.H2("Questions"), dcc.Graph(id="mca_3d", figure=fig)],
                     className="pt-3 pb-2",
                 ),
                 dbc.Row(
@@ -396,26 +444,26 @@ def questions(pathname):
                                 html.Li(
                                     [
                                         html.A(
-                                            row[0],
-                                            href=f"https://quora.com/{row[1]}",
+                                            question,
+                                            href=f"https://quora.com/{metadata['link']}",
                                             target="_blank",
                                         ),
                                         html.Span(
                                             [
                                                 dbc.Badge(
-                                                    f"Typ: {row[4]:.2f}",
+                                                    f"Typ: {metadata['typ']:.2f}",
                                                     color="white",
                                                     text_color="muted",
                                                     className="",
                                                 ),
                                                 dbc.Badge(
-                                                    f"Follow: {row[2]}",
+                                                    f"Followers: {metadata['followers']}",
                                                     color="white",
                                                     text_color="info",
                                                     className="",
                                                 ),
                                                 dbc.Badge(
-                                                    f"Answers: {row[3]}",
+                                                    f"Answered: {metadata['answered']}",
                                                     color="white",
                                                     text_color="success",
                                                     className="",
@@ -425,7 +473,7 @@ def questions(pathname):
                                         ),
                                     ]
                                 )
-                                for row in data
+                                for question, metadata in data.iterrows()
                             ]
                         ),
                     ],

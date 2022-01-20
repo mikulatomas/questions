@@ -36,6 +36,8 @@ def build_context(df, lemmatized_data):
     for idx, r in enumerate(lemmatized_data):
         context.loc[idx] = [lemma in r for lemma in universum]
     
+    context.index = df["Questions"]
+
     return context
 
 
