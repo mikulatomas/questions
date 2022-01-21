@@ -59,13 +59,12 @@ bl = tuple(
 )
 
 
-def filter_concept_list(concepts, context, min_, max_):
+def filter_concept_list(concepts, context, min_):
     return (
         concept
         for concept in concepts
         if concept not in [context.lattice.supremum, context.lattice.infimum]
         and len(concept.extent) >= min_
-        and len(concept.extent) <= max_
     )
 
 
@@ -134,6 +133,7 @@ concepts = dbc.Col(
             dbc.Row(
                 [
                     html.H2("Concepts"),
+                    dbc.Label("Keywords"),
                     dcc.Dropdown(
                         id="intent-dropdown",
                         options=[
@@ -141,21 +141,23 @@ concepts = dbc.Col(
                             for label, count in attributes.iteritems()
                         ],
                         multi=True,
+                        className="mb-2"
                     ),
-                    dcc.RangeSlider(
+                    dbc.Label("Minimal number of questions"),
+                    dcc.Slider(
                         id="concept-size-slider",
                         min=min_extent_size,
-                        max=max_extent_size,
+                        max=max_extent_size // 5,
                         step=1,
-                        value=[min_extent_size, max_extent_size],
-                        allowCross=False,
+                        value=10,
                         tooltip={"placement": "bottom", "always_visible": False},
+                        className="ps-4 pe-4"
                     ),
                 ],
-                className="pt-3 pb-2",
+                className="pt-3",
             ),
             dbc.Row(
-                className="flex-grow-1 overflow-auto full-height-fix", id="concepts"
+                className="flex-grow-1 overflow-auto full-height-fix pt-2", id="concepts"
             ),
         ],
         className="h-100 d-flex flex-column",
@@ -245,13 +247,12 @@ def concept_links_detail(concepts, intent=[], sign="", id="", className=""):
     Input("concept-size-slider", "value"),
 )
 def update_intent_dropdown(values, slider):
-    min_, max_ = slider
+    min_ = slider
     if values:
         concepts = filter_concept_list(
             context.lattice.downset_union([context.lattice[values]]),
             context,
             min_,
-            max_,
         )
 
         filtered_intents = []
@@ -279,20 +280,18 @@ def update_intent_dropdown(values, slider):
     Input("concept-size-slider", "value"),
 )
 def update_output(values, slider):
-    min_, max_ = slider
-    print(min_, max_)
+    min_ = slider
 
     if values:
         concepts = filter_concept_list(
             context.lattice.downset_union([context.lattice[values]]),
             context,
             min_,
-            max_,
         )
 
-        concept_links(concepts, id="keywords")
+        return concept_links(concepts, id="keywords")
     else:
-        concepts = filter_concept_list(context.lattice, context, min_, max_)
+        concepts = filter_concept_list(context.lattice, context, min_)
 
         return concept_links(concepts, id="keywords", limit=300)
 
@@ -316,24 +315,25 @@ def detail(pathname):
                         html.Div(
                             [
                                 html.H2("Concept detail"),
+                                dbc.Label("Metadata"),
                                 html.Ul(
                                     [
                                         html.Li(
                                             [
-                                                html.B("Keywords: "),
-                                                f"{', '.join(concept.intent)}",
+                                                "Keywords: ",
+                                                html.I(f"{', '.join(concept.intent)}"),
                                             ]
                                         ),
-                                        html.Li([html.B("Shape: "), f"{shape}"]),
+                                        html.Li(["Shape: ",  html.I(f"{shape}")]),
                                         html.Li(
                                             [
-                                                html.B("Basic level: "),
-                                                f"{bl[concept_id]:.2f}",
+                                                "Basic level: ",
+                                                 html.I(f"{bl[concept_id]:.2f}"),
                                             ]
                                         ),
                                     ]
                                 ),
-                                html.H3("Related keywords"),
+                                dbc.Label("Related keywords"),
                             ]
                         ),
                     ],
@@ -384,9 +384,9 @@ def navigation(pathname):
                         html.Div(
                             [
                                 html.H2("Navigation"),
-                                html.H3("More general"),
+                                dbc.Label("More general"),
                                 upper,
-                                html.H3("More specific"),
+                                dbc.Label("More specific"),
                                 lower,
                             ]
                         ),
@@ -425,21 +425,27 @@ def questions(pathname):
 
         data = data.sort_values("typ", ascending=False)
 
-        mca = MCAConcept(
-            concept, n_components=3, n_iter=5, color_by=["typ", data["typ"]]
-        )
-        fig = mca.to_plotly()
-        fig.update_traces(marker={"size": 7})
+        if len(concept.extent) > 2:
+            mca = MCAConcept(
+                concept, n_components=3, n_iter=5, color_by=["typ", data["typ"]]
+            )
+
+            fig = mca.to_plotly()
+            fig.update_traces(marker={"size": 7})
+            graph = dcc.Graph(id="mca_3d", figure=fig)
+            plot = [html.H2("MCA plot"), dbc.Label("Multiple correspondence analysis (MCA) plot"), graph, html.H2("Questions")]
+        else:
+            plot = [html.H2("Questions")]
 
         return html.Div(
             [
                 dbc.Row(
-                    [html.H2("Questions"), dcc.Graph(id="mca_3d", figure=fig)],
+                    plot,
                     className="pt-3 pb-2",
                 ),
                 dbc.Row(
-                    [
-                        html.Ul(
+                    [   
+                    html.Ul(
                             [
                                 html.Li(
                                     [
