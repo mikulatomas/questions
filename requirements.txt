@@ -1,0 +1,7 @@
+gunicorn
+dash
+dash_bootstrap_components
+concepts
+fcapsy
+fcapsy-experiments
+prince
