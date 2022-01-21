@@ -73,7 +73,6 @@ def get_concept_id(concept):
 
 
 def concept_links(concepts, intent=[], id="", limit=None):
-    # concepts = sorted(concepts, key=lambda c: bl[get_concept_id(c)], reverse=True)
     concepts = [
         c
         for c in sorted(concepts, key=lambda c: bl[get_concept_id(c)], reverse=True)

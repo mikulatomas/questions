@@ -1,0 +1,98 @@
+html, body, .wrapper, container-fluid{
+    height: 100vh;
+}
+
+ul {
+    list-style-type: none;
+    padding-left: 0;
+}
+
+li {
+    position: relative;
+}
+
+a {
+    text-decoration: none;
+}
+
+h2 {
+    font-size: 1.5em;
+}
+
+.full-height-fix {
+    height: 0px;
+}
+
+.navbar .container-fluid {
+    padding-left: 0;
+}
+
+.status-bar {
+    text-align: right;
+    background-color: white;
+    border-radius: 0 0 3px 3px;
+}
+
+.border-right {
+    border-right: 1px solid #EEEEEE;
+}
+
+.background-gray {
+    background-color: #F7F7F7;
+}
+
+#concepts li, .navigation li {
+    display: block;
+    position: relative;
+    background-color: white;
+    padding: 0.5em;
+    padding-right: 7em;
+    margin-bottom: 0.4em;
+    font-size: 0.9em;
+    line-height: 1.3em;
+    border-radius: 3px;
+}
+
+.navigation .sign {
+    padding-left: 2em;
+}
+
+
+#centrality {
+    list-style-type: none;
+    padding-top: 0;
+    margin-left: 0; 
+}
+
+#centrality li {
+    display: block;
+    position: relative;
+    background-color: white;
+    padding: 0.4em;
+    padding-right: 7em;
+    margin-bottom: 0.4em;
+    font-size: 0.9em;
+    line-height: 1.3em;
+    border-radius: 3px;
+    font-weight: bold;
+}
+
+#question-list {
+    list-style-type: none;
+    padding: 1em;
+    padding-top: 0;
+    margin-left: 0;
+}
+
+#question-list li {
+    display: block;
+    position: relative;
+    background-color: #F7F7F7;
+    border: 1px solid #F7F7F7;
+    padding: 0.8em;
+    padding-bottom: 2.3em;
+    margin-bottom: 1em;
+    font-size: 0.9em;
+    line-height: 1.3em;
+    border-radius: 3px;
+}
