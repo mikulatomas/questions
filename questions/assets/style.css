@@ -96,3 +96,12 @@ h2 {
     line-height: 1.3em;
     border-radius: 3px;
 }
+
+#question-list {
+    height: 80vh;
+    overflow: auto;
+}
+
+#mca {
+    height: 80vh;
+}

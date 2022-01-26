@@ -147,7 +147,7 @@ def update_detail(pathname):
         ]
 
         return metadata, centrality
-    
+
     return ["N/A"], ["N/A"]
 
 
@@ -169,7 +169,7 @@ def update_navigation(pathname):
         lower = navigation_links(concept.lower_neighbors, "up", concept.intent)
 
         return upper, lower
-    
+
     return ["N/A"], ["N/A"]
 
 
@@ -211,15 +211,9 @@ def update_questions(pathname):
 
             fig = mca.to_plotly()
             fig.update_traces(marker={"size": 7})
-            graph = dcc.Graph(id="mca_3d", figure=fig)
-            mca_plot = [
-                html.H2("MCA plot"),
-                dbc.Label("Multiple correspondence analysis (MCA) plot"),
-                graph,
-                html.H2("Questions"),
-            ]
+            mca_plot = [dcc.Graph(id="mca_3d", figure=fig)]
         else:
-            mca_plot = [html.H2("Questions")]
+            mca_plot = []
 
         questions = [
             li_question(
@@ -233,7 +227,7 @@ def update_questions(pathname):
         ]
 
         return mca_plot, questions
-    
+
     return None, []
 
 

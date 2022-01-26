@@ -1,3 +1,4 @@
+from pydoc import classname
 import dash.html as html
 import dash_bootstrap_components as dbc
 
@@ -15,7 +16,9 @@ from . import callbacks
 navbar = dbc.NavbarSimple(
     children=[
         dbc.NavItem(dbc.NavLink("Info", id="open-offcanvas", n_clicks=0)),
-        dbc.NavItem(dbc.NavLink("Github", href="https://github.com/mikulatomas/questions")),
+        dbc.NavItem(
+            dbc.NavLink("Github", href="https://github.com/mikulatomas/questions")
+        ),
     ],
     brand="Kaggle Questions Dataset",
     brand_href="/",
@@ -55,10 +58,9 @@ concepts = dbc.Col(
             ),
             dbc.Row(
                 html.Ul(
-                        id="concepts",
-                    ),
+                    id="concepts",
+                ),
                 className="flex-grow-1 overflow-auto full-height-fix pt-2",
-                
             ),
         ],
         className="h-100 d-flex flex-column",
@@ -100,63 +102,87 @@ detail = dbc.Col(
 
 navigation = dbc.Col(
     html.Div(
-            [   
-                dbc.Row(
-                    [
-                        html.Div(
-                            [
-                                html.H2("Navigation"),
-                            ]
-                        ),
-                    ], className="pt-3 pb-2"
-                ),
-                dbc.Row(
-                    [
-                        html.Div(
-                            [
-                                dbc.Label("More general"),
-                                html.Div(id="upper-concepts"),
-                                dbc.Label("More specific"),
-                                html.Div(id="lower-concepts"),
-                            ]
-                        ),
-                    ],
-                    className="flex-grow-1 overflow-auto full-height-fix",
-                ),
-            ],
-            className="h-100 d-flex flex-column",
-        ),
-    id="navigation", width=2, className="border-right background-gray")
+        [
+            dbc.Row(
+                [
+                    html.Div(
+                        [
+                            html.H2("Navigation"),
+                        ]
+                    ),
+                ],
+                className="pt-3 pb-2",
+            ),
+            dbc.Row(
+                [
+                    html.Div(
+                        [
+                            dbc.Label("More general"),
+                            html.Div(id="upper-concepts"),
+                            dbc.Label("More specific"),
+                            html.Div(id="lower-concepts"),
+                        ]
+                    ),
+                ],
+                className="flex-grow-1 overflow-auto full-height-fix",
+            ),
+        ],
+        className="h-100 d-flex flex-column",
+    ),
+    id="navigation",
+    width=2,
+    className="border-right background-gray",
+)
 
-
-questions = dbc.Col(html.Div(
+tabs = dbc.Tabs(
+    [
+        dbc.Tab(
             [
                 dbc.Row(
-                    id="mca",
-                    className="pt-3 pb-2",
-                ),
-                dbc.Row(
                     [
-                        html.Ul(
-                            id="question-list"
-                        ),
+                        html.Ul(id="question-list"),
                     ],
-                    className="flex-grow-1 overflow-auto full-height-fix",
+                    className="pt-3",
                 ),
             ],
-            className="h-100 d-flex flex-column",
+            label="Questions",
         ),
-    id="questions", className="border-right")
+        dbc.Tab(
+            dbc.Row(
+                id="mca",
+                className="pt-3 pb-2",
+            ),
+            label="MCA Plot",
+        ),
+    ],
+    className="mt-2 mb-2",
+)
+
+questions = dbc.Col(
+    html.Div(
+        tabs,
+        className="h-100 d-flex flex-column",
+    ),
+    id="questions",
+    className="border-right",
+)
 
 
 info = dbc.Offcanvas(
-            html.P(
-                ["Original dataset is avaliable ", html.A("here", href="https://www.kaggle.com/umairnasir14/all-kaggle-questions-on-qoura-dataset"), "."]
+    html.P(
+        [
+            "Original dataset is avaliable ",
+            html.A(
+                "here",
+                href="https://www.kaggle.com/umairnasir14/all-kaggle-questions-on-qoura-dataset",
             ),
-            id="info",
-            title="Kaggle Question Dataset",
-            is_open=False,
-        )
+            ".",
+        ]
+    ),
+    id="info",
+    title="Kaggle Question Dataset",
+    is_open=False,
+)
 
 app.layout = html.Div(
     [
