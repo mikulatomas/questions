@@ -21,8 +21,8 @@ from .data import (
 
 
 @cache
-def similarity_cached(x, y):
-    return jaccard(x, y)
+def similarity_cached(x, y, *args, **kwargs):
+    return jaccard(x, y, *args, **kwargs)
 
 
 def filter_concept_list(concepts, context, min_extent_size):
@@ -186,7 +186,7 @@ def update_questions(pathname):
         typicality_functions = {
             "typ_avg": {
                 "func": typicality_avg,
-                "args": {"J": [similarity_cached]},
+                "args": {"J": {"similarity": similarity_cached}},
             }
         }
 
